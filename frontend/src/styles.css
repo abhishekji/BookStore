@@ -1,0 +1,5 @@
+:root { font-family: system-ui, sans-serif; color: #172033; background: #f7f8fb; }
+body { margin: 0; } main { max-width: 1100px; margin: 0 auto; padding: 3rem 1.5rem; }
+.catalogue { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.book-card { background: white; border: 1px solid #e5e7eb; border-radius: .75rem; padding: 1.25rem; box-shadow: 0 2px 5px #0000000d; }
+.book-card h2 { margin-top: 0; font-size: 1.15rem; }

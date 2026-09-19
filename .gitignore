@@ -1,0 +1,56 @@
+# Maven and Java build output
+**/target/
+**/build/
+**/out/
+
+# Maven local files
+.mvn/timing.properties
+
+# Node, Vite, and TypeScript build output
+**/node_modules/
+**/dist/
+**/.vite/
+**/.cache/
+**/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
+# Local environment and secrets
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+*.local
+
+# Logs and crash reports
+*.log
+hs_err_pid*
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+
+# VS Code
+.vscode/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Kotlin
+.kotlin/
