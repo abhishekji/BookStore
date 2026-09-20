@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.core.AuthenticationException;
 import java.time.Instant;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(error(request, HttpStatus.CONFLICT.value(),
                         "IDEMPOTENCY_CONFLICT", ex.getMessage()));
+    }
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    ResponseEntity<ApiError> userConflict(UserAlreadyExistsException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(error(request, HttpStatus.CONFLICT.value(), "USER_ALREADY_EXISTS", ex.getMessage()));
+    }
+    @ExceptionHandler(AuthenticationException.class)
+    ResponseEntity<ApiError> authenticationFailure(AuthenticationException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(error(request, HttpStatus.UNAUTHORIZED.value(),
+                        "AUTHENTICATION_FAILED", "Invalid email or password"));
+    }
+    @ExceptionHandler({CartNotFoundException.class, CartItemNotFoundException.class})
+    ResponseEntity<ApiError> cartNotFound(RuntimeException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(error(request, HttpStatus.NOT_FOUND.value(), "CART_ITEM_NOT_FOUND", ex.getMessage()));
     }
     @ExceptionHandler(BookNotFoundException.class)
     ResponseEntity<ApiError> notFound(BookNotFoundException ex, HttpServletRequest request) {

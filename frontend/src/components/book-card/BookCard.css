@@ -1,0 +1,16 @@
+.book-card {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.35rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+}
+
+.book-card h2 { margin: 0; font-size: 1.1rem; color: #172033; }
+.book-card p { margin: 0; color: #64748b; }
+.book-card strong { color: #172033; font-size: 1.35rem; }
+.book-card--unavailable { opacity: .62; }
+.book-card__action { margin-top: auto; width: 100%; }

@@ -1,7 +1,9 @@
 package com.bookstore.application;
 
 import com.bookstore.domain.Cart;
+import com.bookstore.domain.Book;
 import com.bookstore.infrastructure.BusinessEventLogger;
+import com.bookstore.repository.BookRepository;
 import com.bookstore.repository.CartRepository;
 import org.junit.jupiter.api.Test;
 
@@ -12,14 +14,17 @@ import static org.mockito.Mockito.*;
 
 class CartApplicationServiceTest {
     private final CartRepository repository = mock(CartRepository.class);
+    private final BookRepository books = mock(BookRepository.class);
     private final BusinessEventLogger eventLogger = mock(BusinessEventLogger.class);
-    private final CartApplicationService service = new CartApplicationService(repository, eventLogger);
+    private final CartApplicationService service = new CartApplicationService(repository, books, eventLogger);
     private final UUID userId = UUID.randomUUID();
     private final UUID bookId = UUID.randomUUID();
 
     @Test
     void logsSuccessfulAddToCartWithResultingQuantity() {
-        when(repository.findByUserId(userId)).thenReturn(Optional.of(new Cart(userId)));
+        when(repository.findByUserIdForUpdate(userId)).thenReturn(Optional.of(new Cart(userId)));
+        when(books.findById(bookId)).thenReturn(Optional.of(
+                new Book("Clean Code", "Robert C. Martin", null, java.math.BigDecimal.TEN, 2)));
 
         service.addItem(userId, bookId, 2);
 
@@ -31,7 +36,7 @@ class CartApplicationServiceTest {
     void logsSuccessfulRemoveFromCart() {
         Cart cart = new Cart(userId);
         cart.addItem(bookId, 1);
-        when(repository.findByUserId(userId)).thenReturn(Optional.of(cart));
+        when(repository.findByUserIdForUpdate(userId)).thenReturn(Optional.of(cart));
 
         service.removeItem(userId, bookId);
 

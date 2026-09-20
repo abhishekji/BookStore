@@ -152,7 +152,7 @@ Expected response:
 Catalogue endpoint:
 
 ```text
-GET http://localhost:8080/api/books
+GET http://localhost:8080/api/v1/books
 ```
 
 The existing versioned route remains available for backward compatibility:
@@ -360,12 +360,217 @@ The complete rules are documented in [`docs/engineering-guidelines.md`](docs/eng
 | Method | Endpoint | Purpose | Access |
 |---|---|---|---|
 | `GET` | `/api/v1/health` | Check service availability | Public |
-| `GET` | `/api/books` | Retrieve books currently in stock | Public |
-| `GET` | `/api/books/{id}` | Retrieve one book by ID | Public |
-| `GET` | `/api/v1/books` | Backward-compatible catalogue route | Public |
-| `GET` | `/api/v1/books/{id}` | Backward-compatible single-book route | Public |
+| `GET` | `/api/v1/books` | Retrieve books currently in stock | Public |
+| `GET` | `/api/v1/books/{id}` | Retrieve one book by ID | Public |
 
-The domain layer already models `UserAccount`, `Book`, `Cart`, `CartItem`, `Order`, and `OrderItem`. Business endpoints for registration, login, cart management, checkout, and orders should be added incrementally behind application services.
+The books list supports incremental offset pagination and title search on the same
+endpoint:
+
+```text
+GET /api/v1/books?offset=0&limit=5&search=clean
+```
+
+The response contains `content`, `offset`, `limit`, `hasNext`, and `total`. The
+frontend debounces title searches and loads the next page automatically as the
+catalogue approaches the viewport.
+
+The domain layer models `UserAccount`, `Book`, `Cart`, `CartItem`, `Order`, and `OrderItem`.
+
+## Authentication and cart APIs
+
+## Interactive API documentation
+
+Start the backend from the repository root:
+
+```powershell
+mvn -pl backend spring-boot:run
+```
+
+Then open the Swagger UI:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+The shorter redirect URL is also available:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+The canonical catalogue routes are versioned under `/api/v1/books`. Cart quantity
+and removal routes use the `bookId` returned in the cart response; existing
+`cartItemId` values are also accepted for compatibility.
+
+Machine-readable OpenAPI documents:
+
+```text
+http://localhost:8080/v3/api-docs
+http://localhost:8080/v3/api-docs.yaml
+```
+
+The Swagger UI is enabled by the `springdoc-openapi-starter-webmvc-ui` dependency.
+Swagger UI and OpenAPI document endpoints are public in the local configuration. Do
+not expose them publicly without access control in a production deployment.
+
+### Running the documented APIs
+
+1. Start the backend. The default profile uses an in-memory H2 database, loads the
+   sample books from `backend/src/main/resources/data.sql`, and listens on port `8080`.
+2. Open the Swagger UI link above.
+3. Execute `POST /api/auth/register` or `POST /api/auth/login`.
+4. Copy the returned `token`.
+5. Click **Authorize** in Swagger UI and enter:
+
+   ```text
+   Bearer <token>
+   ```
+
+6. Execute the authenticated cart endpoints. The cart APIs use the authenticated
+   account and do not accept a user ID from the request.
+
+The currently documented API surface is:
+
+| Method | Endpoint | Authentication | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/health` | Public | Backend health |
+| `GET` | `/api/v1/books` | Public | List books currently in stock |
+| `GET` | `/api/v1/books/{id}` | Public | Retrieve one book |
+| `POST` | `/api/auth/register` | Public | Register and receive a JWT |
+| `POST` | `/api/auth/login` | Public | Authenticate and receive a JWT |
+| `GET` | `/api/cart` | Bearer JWT | Retrieve the current user's cart |
+| `POST` | `/api/cart/items` | Bearer JWT | Add an available book |
+| `PATCH` | `/api/cart/items/{bookId}` | Bearer JWT | Change quantity |
+| `DELETE` | `/api/cart/items/{bookId}` | Bearer JWT | Remove an item |
+
+Example cart request:
+
+```http
+POST http://localhost:8080/api/cart/items
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "bookId": "b55c75c7-23b7-4144-8a02-a3bccbfa045f",
+  "quantity": 2
+}
+```
+
+Example authentication response:
+
+```json
+{
+  "token": "<jwt>",
+  "email": "reader@example.com",
+  "displayName": "Reader"
+}
+```
+
+The JWT is stateless and expires according to `bookstore.security.jwt.expiration`
+(one hour by default). Set `BOOKSTORE_JWT_SECRET` to a strong secret of at least
+32 characters outside local development. Never commit or log the secret or tokens.
+
+Invalid request data returns the existing structured error response. Invalid login
+credentials return `401` with a generic message. Duplicate registration returns
+`409`. Missing or invalid bearer credentials return `401`. Cart item or book lookup
+failures return `404`, and unavailable books cannot be added.
+
+Registration and login are available under `/api/auth`:
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{"email":"reader@example.com","password":"StrongPass1","displayName":"Reader"}
+```
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{"email":"reader@example.com","password":"StrongPass1"}
+```
+
+Both endpoints return a short-lived JWT response containing `token`, `email`, and
+`displayName`. Send the token on protected requests as:
+
+```text
+Authorization: Bearer <token>
+```
+
+Passwords are BCrypt-hashed before persistence. Registration rejects duplicate email
+addresses and weak passwords. Invalid login credentials return a generic authentication
+failure.
+
+### Password transport and verification
+
+The browser must not hash the password as a replacement for HTTPS. A client-side hash
+would act as a reusable password-equivalent and could be replayed by anyone who steals
+it. The supported flow is:
+
+1. The client sends the password in the registration or login request body.
+2. The request is transported over HTTPS/TLS in staging and production, so the password
+   is encrypted on the network.
+3. During registration, the backend hashes the password with BCrypt and stores only the
+   BCrypt hash in `user_account.password_hash`.
+4. During login, Spring Security uses the submitted password and the stored BCrypt hash
+   through the configured `PasswordEncoder`; the plaintext password is never persisted.
+5. The backend returns a short-lived JWT. Subsequent protected requests use the JWT,
+   not the password.
+
+The password is therefore visible in the browser's own request inspector during local
+development, but it is encrypted on the network when HTTPS is used. Never log request
+bodies, passwords, authorization headers, or JWTs.
+
+For local development, the default H2 profile intentionally uses HTTP:
+
+```text
+http://localhost:8080
+```
+
+For a directly TLS-terminating Spring Boot instance, provide a PKCS12 keystore and
+start the HTTPS profile:
+
+```powershell
+$env:HTTPS_KEY_STORE = "file:C:\secrets\bookstore-keystore.p12"
+$env:HTTPS_KEY_STORE_PASSWORD = "<keystore-password>"
+$env:HTTPS_KEY_ALIAS = "bookstore"
+mvn -pl backend spring-boot:run -Dspring-boot.run.profiles=https
+```
+
+The HTTPS API is then available at:
+
+```text
+https://localhost:8443
+```
+
+In production, TLS is commonly terminated at a trusted reverse proxy or load balancer.
+In that setup, configure the proxy with a valid certificate, forward requests to the
+backend over a private network, and set the frontend API URL to the HTTPS origin:
+
+```powershell
+$env:VITE_API_URL = "https://api.example.com/api/v1"
+npm run dev
+```
+
+Use a valid certificate issued by a trusted certificate authority in non-local
+environments. Do not disable certificate verification or use self-signed certificates
+for ordinary production clients.
+
+Authenticated cart endpoints are:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/cart` | Retrieve the current user's cart |
+| `POST` | `/api/cart/items` | Add an available book |
+| `PATCH` | `/api/cart/items/{bookId}` | Change an item's quantity |
+| `DELETE` | `/api/cart/items/{bookId}` | Remove an item |
+
+Cart ownership is derived from the authenticated account; clients cannot provide an
+arbitrary user ID. Cart quantities are validated in the domain, repeated additions
+merge into one line, and totals are calculated from persisted book prices. Checkout,
+order creation, payment, and idempotency execution are intentionally not implemented
+in this iteration.
 
 ### Catalogue response example
 
@@ -392,7 +597,7 @@ The catalogue endpoint returns only books with `inStock: true`. A request for an
   "status": 404,
   "error": "BOOK_NOT_FOUND",
   "message": "Book not found: 00000000-0000-0000-0000-000000000000",
-  "path": "/api/books/00000000-0000-0000-0000-000000000000"
+  "path": "/api/v1/books/00000000-0000-0000-0000-000000000000"
 }
 ```
 

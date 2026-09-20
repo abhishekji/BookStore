@@ -3,7 +3,9 @@ package com.bookstore.dto;
 import com.bookstore.domain.Book;
 import java.math.BigDecimal;
 import java.util.UUID;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description = "Public book catalogue item")
 public record BookResponse(UUID id, String title, String author, String isbn, BigDecimal price,
                            int stockQuantity, boolean inStock) {
     public BookResponse(UUID id, String title, String author, String isbn, BigDecimal price, int stockQuantity) {

@@ -2,6 +2,7 @@ package com.bookstore.api;
 
 import com.bookstore.application.BookCatalogService;
 import com.bookstore.dto.BookResponse;
+import com.bookstore.dto.BookPageResponse;
 import com.bookstore.exception.BookNotFoundException;
 import com.bookstore.exception.GlobalExceptionHandler;
 import com.bookstore.infrastructure.CorrelationIdFilter;
@@ -29,12 +30,13 @@ class BookControllerMvcTest {
 
     @Test
     void listsAvailableBooksSuccessfully() throws Exception {
-        when(service.listAvailableBooks()).thenReturn(List.of(BookFixtures.availableResponse()));
+        when(service.searchAvailableBooks("", 0, 5)).thenReturn(
+                new BookPageResponse(List.of(BookFixtures.availableResponse()), 0, 5, false, 1));
 
         mvc.perform(get(ApiRoutes.BOOKS))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value(BookFixtures.TITLE))
-                .andExpect(jsonPath("$[0].inStock").value(true))
+                .andExpect(jsonPath("$.content[0].title").value(BookFixtures.TITLE))
+                .andExpect(jsonPath("$.content[0].inStock").value(true))
                 .andExpect(header().exists("X-Correlation-Id"));
     }
 

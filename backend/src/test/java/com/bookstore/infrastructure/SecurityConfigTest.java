@@ -13,7 +13,7 @@ class SecurityConfigTest {
                 java.util.List.of("http://localhost:5173"),
                 java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"),
                 java.util.List.of("*"),
-                true)).corsConfigurationSource();
+                true), null).corsConfigurationSource();
         CorsConfiguration configuration = source.getCorsConfiguration(
                 new org.springframework.mock.web.MockHttpServletRequest("GET", "/api/v1/books"));
 
