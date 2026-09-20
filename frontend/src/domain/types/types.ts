@@ -5,4 +5,5 @@ export type Book = {
   isbn?: string;
   price: number;
   stockQuantity: number;
+  inStock: boolean;
 };

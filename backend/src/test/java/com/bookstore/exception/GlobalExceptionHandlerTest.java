@@ -38,4 +38,17 @@ class GlobalExceptionHandlerTest {
         assertEquals("INTERNAL_ERROR", response.getBody().code());
         assertEquals("An unexpected error occurred", response.getBody().message());
     }
+
+    @Test
+    void mapsIdempotencyConflictToConflictResponse() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getAttribute(CorrelationIdFilter.ATTRIBUTE)).thenReturn("corr-3");
+
+        var response = new GlobalExceptionHandler().idempotencyConflict(
+                new IdempotencyConflictException("key conflict"), request);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("IDEMPOTENCY_CONFLICT", response.getBody().code());
+    }
 }

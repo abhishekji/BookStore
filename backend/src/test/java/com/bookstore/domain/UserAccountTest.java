@@ -32,4 +32,15 @@ class UserAccountTest {
                         () -> new UserAccount("user@example.com", " ", "Reader"))
         );
     }
+
+    @Test
+    void rejectsMalformedEmailAndOversizedDisplayName() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new UserAccount("invalid-email", "hash", "Reader")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new UserAccount("user@example.com", "hash",
+                                "x".repeat(UserAccountRules.MAX_DISPLAY_NAME_LENGTH + 1)))
+        );
+    }
 }

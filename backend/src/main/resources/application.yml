@@ -10,22 +10,66 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
   h2:
     console:
       enabled: true
 server:
   port: 8080
+bookstore:
+  cors:
+    allowed-origins:
+      - http://localhost:5173
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    allow-credentials: true
 ---
 spring:
   config:
     activate:
       on-profile: mysql
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:bookstore}
-    username: ${MYSQL_USERNAME:bookstore}
-    password: ${MYSQL_PASSWORD:bookstore}
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+  sql:
+    init:
+      mode: never
+---
+spring:
+  config:
+    activate:
+      on-profile: vault
+    import: vault://
+  cloud:
+    vault:
+      uri: ${VAULT_ADDR}
+      token: ${VAULT_TOKEN}
+      kv:
+        enabled: true
+        backend: ${VAULT_KV_BACKEND:secret}
+        application-name: ${VAULT_APPLICATION_NAME:bookstore-backend}
+        default-context: ${VAULT_DEFAULT_CONTEXT:bookstore}
+        profile-separator: /
+  datasource:
+    url: ${BOOKSTORE_DATASOURCE_URL}
+    username: ${BOOKSTORE_DATASOURCE_USERNAME}
+    password: ${BOOKSTORE_DATASOURCE_PASSWORD}
+    driver-class-name: ${BOOKSTORE_DATASOURCE_DRIVER:com.mysql.cj.jdbc.Driver}
+  jpa:
     hibernate:
       ddl-auto: validate

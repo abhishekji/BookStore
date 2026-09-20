@@ -4,6 +4,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.GenerationType;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.CascadeType;
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.UUID;
@@ -13,11 +18,16 @@ public class Book {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    @NotBlank
     private String title;
+    @NotBlank
     private String author;
     private String isbn;
+    @NotNull
+    @DecimalMin(value = BookRules.MINIMUM_PRICE)
     private BigDecimal price;
-    private int stockQuantity;
+    @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
+    private Inventory inventory;
 
     protected Book() { }
 
@@ -25,14 +35,15 @@ public class Book {
         if (title == null || title.isBlank() || author == null || author.isBlank()) {
             throw new IllegalArgumentException("Title and author are required");
         }
-        if (price == null || price.signum() < 0 || stockQuantity < 0) {
-            throw new IllegalArgumentException("Price and stock cannot be negative");
+        if (price == null || price.signum() < 0) {
+            throw new IllegalArgumentException("Price cannot be negative");
         }
         this.title = title.trim();
         this.author = author.trim();
         this.isbn = isbn;
         this.price = price;
-        this.stockQuantity = stockQuantity;
+        this.inventory = new Inventory(stockQuantity);
+        this.inventory.assignBook(this);
     }
 
     public UUID getId() { return id; }
@@ -40,7 +51,9 @@ public class Book {
     public String getAuthor() { return author; }
     public String getIsbn() { return isbn; }
     public BigDecimal getPrice() { return price; }
-    public int getStockQuantity() { return stockQuantity; }
+    public Inventory getInventory() { return inventory; }
+    public int getStockQuantity() { return inventory.getStockQuantity(); }
+    public boolean isInStock() { return inventory.isInStock(); }
 
     @Override
     public boolean equals(Object o) {

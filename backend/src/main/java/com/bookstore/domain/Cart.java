@@ -16,7 +16,9 @@ public class Cart {
     public UUID getUserId() { return userId; }
     public List<CartItem> getItems() { return List.copyOf(items); }
     public void addItem(UUID bookId, int quantity) {
-        if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
+        if (quantity < QuantityRules.MINIMUM_POSITIVE_QUANTITY) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
         items.stream().filter(i -> i.getBookId().equals(bookId)).findFirst()
                 .ifPresentOrElse(i -> i.increase(quantity), () -> items.add(new CartItem(bookId, quantity)));
     }

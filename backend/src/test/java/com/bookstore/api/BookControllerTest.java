@@ -10,18 +10,18 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import com.bookstore.support.BookFixtures;
 
 class BookControllerTest {
     @Test
     void delegatesBookListingToCatalogService() {
         BookCatalogService catalog = mock(BookCatalogService.class);
-        BookResponse response = new BookResponse(UUID.randomUUID(), "Title", "Author", null,
-                BigDecimal.TEN, 1);
-        when(catalog.listBooks()).thenReturn(List.of(response));
+        BookResponse response = BookFixtures.availableResponse();
+        when(catalog.listAvailableBooks()).thenReturn(List.of(response));
 
         List<BookResponse> result = new BookController(catalog).listBooks();
 
         assertEquals(List.of(response), result);
-        verify(catalog).listBooks();
+        verify(catalog).listAvailableBooks();
     }
 }

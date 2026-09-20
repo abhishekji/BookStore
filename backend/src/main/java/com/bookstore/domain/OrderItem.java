@@ -11,7 +11,9 @@ public class OrderItem {
     private int quantity;
     protected OrderItem() { }
     OrderItem(UUID bookId, int quantity) {
-        if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
+        if (quantity < QuantityRules.MINIMUM_POSITIVE_QUANTITY) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
         this.bookId = bookId; this.quantity = quantity;
     }
     public UUID getId() { return id; }
