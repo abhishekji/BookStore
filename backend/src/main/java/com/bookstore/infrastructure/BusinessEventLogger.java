@@ -15,7 +15,4 @@ public interface BusinessEventLogger {
 
     void checkoutRejected(UUID userId, String outcome);
 
-    void sagaStep(String event, String saga, String step);
-
-    void sagaCompensationFailed(String saga, String step, RuntimeException failure);
 }

@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Data carried through checkout steps. Step implementations own workflow state changes.
+ * Validated checkout identifiers shared by idempotency operations.
  */
 public final class CheckoutContext {
     private final UUID userId;

@@ -43,15 +43,5 @@ public class StructuredBusinessEventLogger implements BusinessEventLogger {
         log.info("event=checkout_rejected correlationId={} userId={} outcome={}", correlationId(), userId, outcome);
     }
 
-    @Override
-    public void sagaStep(String event, String saga, String step) {
-        log.info("event={} saga={} step={}", event, saga, step);
-    }
-
-    @Override
-    public void sagaCompensationFailed(String saga, String step, RuntimeException failure) {
-        log.error("event={} saga={} step={} outcome=failed",
-                SagaLogEvents.COMPENSATION_FAILED, saga, step, failure);
-    }
     private String correlationId() { return MDC.get("correlationId"); }
 }

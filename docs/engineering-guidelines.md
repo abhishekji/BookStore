@@ -20,11 +20,16 @@ Use interfaces at replaceable boundaries such as payment, identity, clock, inven
 
 Keep each pattern focused on a real variation point. Do not add factories, strategies, or builders merely to increase abstraction; a single stable algorithm should remain simple.
 
-## Workflow orchestration
+## Transactional workflows
 
-Cross-boundary workflows use an application-level orchestrator rather than coupling controllers to infrastructure. `SagaOrchestrator` executes `SagaStep` instances and compensates successful steps in reverse order when a later step fails. Compensation failures are retained as suppressed causes and logged with the workflow and step names.
+The modular monolith uses a database transaction as the consistency boundary for
+checkout. Order creation, stock reservation, idempotency persistence, and cart
+mutation remain in the same transaction; controllers must not coordinate those
+operations directly.
 
-The saga is not a substitute for a database transaction. In the modular monolith, order creation, stock reservation, idempotency persistence, and cart mutation should remain in one transaction. Saga steps are appropriate for side effects that cannot participate in that transaction, such as payment providers, messages, or external fulfilment. An outbox should be added before publishing domain events to an external broker.
+External payment, message, or fulfilment integrations should be introduced only when
+there is a concrete requirement. Model each integration behind an application port and
+add an outbox before publishing domain events to an external broker.
 
 ## Transactional integrity
 
@@ -66,7 +71,7 @@ event=stock_reservation_rejected correlationId=... bookId=... requestedQuantity=
 
 Sensitive credentials, tokens, payment information, and raw authorization headers must never be logged.
 
-Application services must use the `BusinessEventLogger` port for business events rather than constructing logger calls throughout use cases. The current adapter emits events for cart add/remove, checkout start/completion/replay/rejection, and saga steps. Correlation IDs are added by `CorrelationIdFilter` through the logging context, so business logs can be correlated without passing request metadata through domain objects. Log identifiers and quantities only; never log request fingerprints, passwords, payment details, or authorization headers.
+Application services must use the `BusinessEventLogger` port for business events rather than constructing logger calls throughout use cases. The current adapter emits events for cart add/remove and checkout start/completion/replay/rejection. Correlation IDs are added by `CorrelationIdFilter` through the logging context, so business logs can be correlated without passing request metadata through domain objects. Log identifiers and quantities only; never log request fingerprints, passwords, payment details, or authorization headers.
 
 ## Secrets management
 
