@@ -24,7 +24,7 @@ main { max-width: 1120px; margin: 0 auto; padding: 3rem 1.5rem; }
 .primary-button, .book-card__action { color: #fff; background: #f97316; }
 .primary-button:hover, .book-card__action:hover { background: #ea580c; }
 .secondary-button { color: #0f766e; background: #ccfbf1; }
-.catalogue { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.25rem; }
+.catalogue { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem; }
 @media (max-width: 640px) {
   .site-header, .site-nav { align-items: flex-start; }
   .site-header { flex-direction: column; }

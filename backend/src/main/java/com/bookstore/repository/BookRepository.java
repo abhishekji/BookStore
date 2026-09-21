@@ -8,8 +8,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface BookRepository extends JpaRepository<Book, UUID> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select b from Book b join fetch b.inventory where b.id in :ids order by b.id")
+    List<Book> findAllByIdForUpdate(@Param("ids") List<UUID> ids);
     List<Book> findByInventoryStockQuantityGreaterThan(int minimumStock);
 
     @Query(value = """

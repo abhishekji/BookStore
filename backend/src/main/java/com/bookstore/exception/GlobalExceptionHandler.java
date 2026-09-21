@@ -64,6 +64,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(error(request, HttpStatus.NOT_FOUND.value(), "BOOK_NOT_FOUND", ex.getMessage()));
     }
+    @ExceptionHandler(java.util.NoSuchElementException.class)
+    ResponseEntity<ApiError> orderNotFound(java.util.NoSuchElementException ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(error(request, HttpStatus.NOT_FOUND.value(), "ORDER_NOT_FOUND", ex.getMessage()));
+    }
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiError> invalidRequest(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         return ResponseEntity.badRequest()

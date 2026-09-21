@@ -11,11 +11,15 @@
 **/dist/
 **/.vite/
 **/.cache/
+**/coverage/
 **/*.tsbuildinfo
 frontend/vite.config.js
 frontend/vite.config.d.ts
 
 # Local environment and secrets
+.env
+.env.*
+!.env.example
 frontend/.env
 frontend/.env.*
 !frontend/.env.example
@@ -30,7 +34,6 @@ hs_err_pid*
 *.iml
 *.iws
 *.ipr
-.github
 
 # Eclipse
 .classpath

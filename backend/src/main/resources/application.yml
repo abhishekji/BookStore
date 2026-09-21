@@ -1,6 +1,13 @@
 spring:
   application:
     name: bookstore-backend
+  # Loads the local .env described in the README so BOOKSTORE_JWT_SECRET resolves without
+  # exporting it by hand. Both paths are optional: startup still fails closed when neither the
+  # file nor a real environment variable supplies the secret. Real environments inject variables.
+  config:
+    import:
+      - optional:file:./.env[.properties]
+      - optional:file:../.env[.properties]
   cloud:
     vault:
       enabled: false
@@ -22,14 +29,29 @@ spring:
       enabled: true
 server:
   port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
 bookstore:
   security:
     jwt:
-      secret: ${BOOKSTORE_JWT_SECRET:local-development-secret-change-this-value-123456}
+      secret: ${BOOKSTORE_JWT_SECRET}
       expiration: PT1H
   cors:
+    # Both spellings of the Vite dev origin; a browser on 127.0.0.1 sends a different Origin
+    # than one on localhost and would otherwise be rejected. Deployments override this.
     allowed-origins:
       - http://localhost:5173
+      - http://127.0.0.1:5173
     allowed-methods:
       - GET
       - POST
@@ -63,6 +85,11 @@ spring:
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:3000}
+      validation-timeout: ${DB_VALIDATION_TIMEOUT_MS:1000}
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
@@ -95,3 +122,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+---
+spring:
+  config:
+    activate:
+      on-profile: observability
+logging:
+  file:
+    name: ${BOOKSTORE_LOG_FILE:logs/bookstore.log}

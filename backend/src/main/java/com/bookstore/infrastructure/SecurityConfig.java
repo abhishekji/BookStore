@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(new ApiAccessDeniedHandler(objectMapper)))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(ApiRoutes.HEALTH, ApiRoutes.BOOKS + "/**",
                                 ApiRoutes.AUTH + "/**",
+                                ApiRoutes.ACTUATOR_HEALTH, ApiRoutes.ACTUATOR_PROMETHEUS,
                                 ApiRoutes.OPENAPI + "/**", ApiRoutes.SWAGGER_UI + "/**",
                                 "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())

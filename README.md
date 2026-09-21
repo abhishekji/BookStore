@@ -9,7 +9,61 @@ The target user journey is:
 3. Display the cart contents.
 4. Increase or decrease item quantities.
 5. Remove books from the cart.
-6. Continue toward checkout and order summary workflows.
+6. Checkout safely and review the order confirmation.
+
+## Checkout and orders
+
+Authenticated users checkout with `POST /api/orders/checkout` and an `Idempotency-Key` header. The response contains the confirmed order, including price/title snapshots. `GET /api/orders` lists only the current user's orders and `GET /api/orders/{id}` returns an order only to its owner.
+
+Checkout is atomic: the idempotency claim, cart lock, stock reservation, order/item persistence, cart clear, and claim completion are one transaction. Failures roll back all writes. `checkout_idempotency` has a database uniqueness constraint on `(user_id, idempotency_key)`, which works across backend instances. The same completed key replays the original order; an in-flight concurrent request gets `409`. The cart and requested books are pessimistically locked, with books locked in UUID order to avoid overselling and reduce deadlock risk.
+
+Important persistence constraints/indexes are the cart's unique user key, inventory's unique book key, order user lookup, and idempotency's unique user/key lookup. Production MySQL deployments should add these schema changes through the team's migration tool before enabling `ddl-auto=validate`.
+
+The React cart now leads to a checkout review and confirmation page. Each mounted checkout attempt creates one browser idempotency key and reuses it for retries; a new key is only created by abandoning and starting a new attempt.
+
+Tests include domain snapshot/transition tests, checkout orchestration tests, idempotency-service unit tests, repository integration tests, and React component/client tests. Run `mvn -pl backend test`, then `npm.cmd test` and `npm.cmd run build` from `frontend`.
+
+## Observability
+
+The backend exposes health/readiness/liveness and Prometheus metrics through Spring Actuator:
+
+| Purpose | URL | Notes |
+|---|---|---|
+| Health | `http://localhost:8080/actuator/health` | Includes liveness/readiness probes |
+| Metrics scrape | `http://localhost:8080/actuator/prometheus` | Prometheus text format |
+| Prometheus | `http://localhost:9090` | Query `http_server_requests_seconds_count` |
+| Grafana | `http://localhost:3000` | Default local login is `admin` / `admin`; change it immediately |
+| Loki | `http://localhost:3100` | Query logs from Grafana Explore |
+
+Start the local stack from the repository root:
+
+```bash
+docker compose -f observability/docker-compose.yml up
+```
+
+Then start the backend with the `observability` profile, which writes structured application logs to `backend/logs/bookstore.log` for Promtail:
+
+```bash
+mvn -pl backend spring-boot:run -Dspring-boot.run.profiles=observability
+```
+
+Prometheus scrapes the backend every 15 seconds. In Grafana, select the provisioned Prometheus data source for metrics and the Loki source for logs; correlate checkout logs with the `correlationId` field. The compose stack is local-development tooling, not a production deployment. In production, protect the metrics endpoint at the network/ingress layer and ship logs to centrally managed storage.
+
+The frontend initializes Sentry only when `VITE_SENTRY_DSN` is configured. It intentionally sends no default PII and samples 10% of traces. Configure `VITE_RELEASE` from the deployment pipeline. No monitoring credential is committed to this repository.
+
+For traffic safety, checkout retains database idempotency, cart and inventory write locks, deterministic book-lock order, and database connection-pool limits under the MySQL profile. These protect correctness; horizontal scale should still be validated with production-like load tests and MySQL lock-timeout monitoring.
+
+## From scratch: local setup
+
+1. Install JDK 17+, Maven 3.9+, Node.js 20+, npm, and optionally Docker Desktop for local observability.
+2. Copy `.env.example` to `.env` in the repository root and set a random `BOOKSTORE_JWT_SECRET` of at least 32 characters. The backend imports this file at startup, so no shell export is needed. `.env` is gitignored; never commit a real secret. Exporting `BOOKSTORE_JWT_SECRET` in the environment also works and takes precedence, which is how deployed environments supply it. If neither is present the application fails to start rather than falling back to an insecure default.
+3. Start the API: `mvn -pl backend spring-boot:run`. It uses H2 by default at `http://localhost:8080`.
+4. In a second terminal run `cd frontend`, `npm ci`, then `npm run dev`. Open `http://localhost:5173`. The dev server is pinned to port 5173 because that origin is the one the backend's CORS allow-list trusts; if the port is already taken, Vite stops with an error instead of moving to another port and leaving every API call blocked by CORS. Free the port, or add the new origin to `bookstore.cors.allowed-origins`.
+5. Browse the OpenAPI UI at `http://localhost:8080/swagger-ui/index.html`; raw OpenAPI is `http://localhost:8080/v3/api-docs`.
+
+### Testing and coverage
+
+Backend tests are package-mirrored JUnit/Mockito unit and JPA integration tests. Run `mvn -pl backend verify` to create `backend/target/site/jacoco/index.html`. Frontend tests are colocated with features and use Testing Library/Vitest. Run `cd frontend && npm run test:coverage` to create `frontend/coverage/index.html`. CI runs both reports, type checks, tests, and production builds. Coverage reports identify gaps; thresholds are deliberately not yet enforced globally because framework/bootstrap code and the growing integration surface should not encourage low-value tests merely to satisfy a number.
 
 The repository currently contains the application foundation, a working book catalogue, domain model, cart behavior foundation, authentication state foundation, sample H2 data, and automated tests. Cart HTTP workflows, registration/login, checkout, and order-summary screens are the next business-feature increments.
 
@@ -467,8 +521,9 @@ Example authentication response:
 ```
 
 The JWT is stateless and expires according to `bookstore.security.jwt.expiration`
-(one hour by default). Set `BOOKSTORE_JWT_SECRET` to a strong secret of at least
-32 characters outside local development. Never commit or log the secret or tokens.
+(one hour by default). `BOOKSTORE_JWT_SECRET` is required in every environment,
+including local development; copy `.env.example` and replace its placeholder with a
+random value of at least 32 characters. Never commit or log the secret or tokens.
 
 Invalid request data returns the existing structured error response. Invalid login
 credentials return `401` with a generic message. Duplicate registration returns
@@ -569,8 +624,8 @@ Authenticated cart endpoints are:
 Cart ownership is derived from the authenticated account; clients cannot provide an
 arbitrary user ID. Cart quantities are validated in the domain, repeated additions
 merge into one line, and totals are calculated from persisted book prices. Checkout,
-order creation, payment, and idempotency execution are intentionally not implemented
-in this iteration.
+checkout is implemented with persisted order snapshots, transactional cart clearing and
+database-backed idempotency. Payment capture remains intentionally out of scope.
 
 ### Catalogue response example
 

@@ -9,6 +9,8 @@ const apiRoot = baseUrl.replace(/\/v1$/, '');
 export type AuthResponse = { token: string; email: string; displayName: string };
 export type CartItem = { cartItemId?: string; bookId: string; title: string; quantity: number; unitPrice: number; lineTotal: number };
 export type Cart = { id: string; items: CartItem[]; total: number };
+export type OrderItem = { bookId: string; bookTitle: string; quantity: number; unitPrice: number; lineTotal: number };
+export type Order = { id: string; items: OrderItem[]; total: number; status: string; createdAt: string };
 export type BookPage = { content: Book[]; offset: number; limit: number; hasNext: boolean; total: number };
 
 function requestHeaders(): HeadersInit {
@@ -105,8 +107,14 @@ async function changeCartQuantity(bookId: string, quantity: number): Promise<Car
 async function removeFromCart(bookId: string): Promise<void> {
   return request<void>(`/cart/items/${bookId}`, { method: 'DELETE' });
 }
+async function checkout(idempotencyKey: string): Promise<Order> {
+  return request<Order>('/orders/checkout', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey } });
+}
+async function getOrders(): Promise<Order[]> { return request<Order[]>('/orders'); }
+async function getOrder(orderId: string): Promise<Order> { return request<Order>(`/orders/${orderId}`); }
 
 export const authApi = { register, login };
 export const cartApi = { getCart, addToCart, changeCartQuantity, removeFromCart };
+export const orderApi = { checkout, getOrders, getOrder };
 export const bookApi = { getBooks };
 export { getBooks };

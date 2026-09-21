@@ -2,16 +2,20 @@ package com.bookstore.domain;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.*;
 
 @Entity
-@Table(name = "customer_orders")
+@Table(name = "customer_orders", indexes = @Index(name = "idx_customer_orders_user_created", columnList = "user_id, created_at"))
 public class Order {
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderStatus status = OrderStatus.PLACED;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<OrderItem> items = new ArrayList<>();
@@ -23,8 +27,22 @@ public class Order {
     public Instant getCreatedAt() { return createdAt; }
     public OrderStatus getStatus() { return status; }
     public List<OrderItem> getItems() { return List.copyOf(items); }
-    public void addItem(UUID bookId, int quantity) { items.add(new OrderItem(bookId, quantity)); }
-    public enum OrderStatus { PLACED, PAID, FULFILLED, CANCELLED }
+    public void addItem(UUID bookId, String bookTitle, int quantity, BigDecimal unitPrice) {
+        if (status != OrderStatus.PLACED) {
+            throw new IllegalStateException("Items can only be added to a placed order");
+        }
+        items.add(new OrderItem(bookId, bookTitle, quantity, unitPrice));
+    }
+    public BigDecimal calculateTotal() {
+        return items.stream().map(OrderItem::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    public void confirm() {
+        if (status != OrderStatus.PLACED) {
+            throw new IllegalStateException("Only a placed order can be confirmed");
+        }
+        status = OrderStatus.CONFIRMED;
+    }
+    public enum OrderStatus { PLACED, CONFIRMED, PAID, FULFILLED, CANCELLED }
 
     public static final class Builder {
         private UUID userId;
@@ -41,8 +59,8 @@ public class Order {
             return this;
         }
 
-        public Builder addItem(UUID bookId, int quantity) {
-            this.items.add(new OrderItem(bookId, quantity));
+        public Builder addItem(UUID bookId, String bookTitle, int quantity, BigDecimal unitPrice) {
+            this.items.add(new OrderItem(bookId, bookTitle, quantity, unitPrice));
             return this;
         }
 

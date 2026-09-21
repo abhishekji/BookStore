@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
+import org.slf4j.MDC;
 
 @Component
 public class StructuredBusinessEventLogger implements BusinessEventLogger {
@@ -24,22 +25,22 @@ public class StructuredBusinessEventLogger implements BusinessEventLogger {
 
     @Override
     public void checkoutStarted(UUID userId) {
-        log.info("event=checkout_started userId={} outcome=processing", userId);
+        log.info("event=checkout_started correlationId={} userId={} outcome=processing", correlationId(), userId);
     }
 
     @Override
     public void checkoutCompleted(UUID userId, UUID orderId) {
-        log.info("event=checkout_completed userId={} orderId={} outcome=success", userId, orderId);
+        log.info("event=checkout_completed correlationId={} userId={} orderId={} outcome=success", correlationId(), userId, orderId);
     }
 
     @Override
     public void checkoutReplayed(UUID userId, UUID orderId) {
-        log.info("event=checkout_replayed userId={} orderId={} outcome=duplicate_request", userId, orderId);
+        log.info("event=checkout_replayed correlationId={} userId={} orderId={} outcome=duplicate_request", correlationId(), userId, orderId);
     }
 
     @Override
     public void checkoutRejected(UUID userId, String outcome) {
-        log.info("event=checkout_rejected userId={} outcome={}", userId, outcome);
+        log.info("event=checkout_rejected correlationId={} userId={} outcome={}", correlationId(), userId, outcome);
     }
 
     @Override
@@ -52,4 +53,5 @@ public class StructuredBusinessEventLogger implements BusinessEventLogger {
         log.error("event={} saga={} step={} outcome=failed",
                 SagaLogEvents.COMPENSATION_FAILED, saga, step, failure);
     }
+    private String correlationId() { return MDC.get("correlationId"); }
 }

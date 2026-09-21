@@ -5,9 +5,10 @@ import './CartPage.css';
 import { useAppDispatch } from '../../state/hooks';
 import { cartFailed, cartLoaded, cartLoading, showToast } from '../../state/store';
 
-export function CartPage({ onCartChange, onContinueShopping }: {
+export function CartPage({ onCartChange, onContinueShopping, onCheckout }: {
   onCartChange?: (cart: Cart) => void;
   onContinueShopping?: () => void;
+  onCheckout?: () => void;
 }) {
   const { isAuthenticated } = useAuth();
   const dispatch = useAppDispatch();
@@ -71,6 +72,6 @@ export function CartPage({ onCartChange, onContinueShopping }: {
         onClick={() => changeQuantity(item.bookId, item.quantity + 1)} disabled={updatingBookId === item.bookId}>+</button></div>
       <button className="remove-button" type="button" onClick={() => removeItem(item.bookId)}>Remove</button>
     </article>)}
-    <aside className="cart-summary"><span>Subtotal</span><strong>${cart.total.toFixed(2)}</strong><button className="primary-button" type="button" disabled>Checkout</button></aside>
+    <aside className="cart-summary"><span>Subtotal</span><strong>${cart.total.toFixed(2)}</strong><button className="primary-button" type="button" onClick={onCheckout}>Proceed to Checkout</button></aside>
   </main>;
 }

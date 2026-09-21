@@ -42,6 +42,7 @@ public class Cart {
             throw new NoSuchElementException("Cart item not found");
         }
     }
+    public void clear() { items.clear(); }
     public BigDecimal calculateTotal(Map<UUID, BigDecimal> prices) {
         return items.stream()
                 .map(item -> prices.getOrDefault(item.getBookId(), BigDecimal.ZERO)

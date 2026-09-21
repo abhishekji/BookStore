@@ -48,4 +48,13 @@ public class Inventory {
     public boolean isInStock() {
         return stockQuantity >= BookRules.MINIMUM_AVAILABLE_QUANTITY;
     }
+    public void reserve(int quantity) {
+        if (quantity < QuantityRules.MINIMUM_POSITIVE_QUANTITY) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+        if (stockQuantity < quantity) {
+            throw new IllegalArgumentException("Book is currently unavailable in the requested quantity");
+        }
+        stockQuantity -= quantity;
+    }
 }
