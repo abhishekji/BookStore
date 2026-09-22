@@ -1,16 +1,15 @@
 import type { Book } from '../../domain/types/types';
+import { API } from '../../config/constants';
 
-const DEFAULT_API_URL = 'http://localhost:8080/api/v1';
-const BOOKS_RESOURCE = '/books';
-const baseUrl = import.meta.env.VITE_API_URL ?? DEFAULT_API_URL;
-export const TOKEN_KEY = 'bookstore_access_token';
+const baseUrl = import.meta.env.VITE_API_URL ?? API.defaultUrl;
 const apiRoot = baseUrl.replace(/\/v1$/, '');
+export const TOKEN_KEY = 'bookstore_access_token';
 
 export type AuthResponse = { token: string; email: string; displayName: string };
 export type CartItem = { cartItemId?: string; bookId: string; title: string; quantity: number; unitPrice: number; lineTotal: number };
 export type Cart = { id: string; items: CartItem[]; total: number };
 export type OrderItem = { bookId: string; bookTitle: string; quantity: number; unitPrice: number; lineTotal: number };
-export type Order = { id: string; items: OrderItem[]; total: number; status: string; createdAt: string };
+export type Order = { id: string; items: OrderItem[]; total: number; status: string; createdAt: string; updatedAt?: string };
 export type BookPage = { content: Book[]; offset: number; limit: number; hasNext: boolean; total: number };
 
 function requestHeaders(): HeadersInit {
@@ -51,7 +50,7 @@ async function request<T>(path: string, options: RequestInit = {}, root = apiRoo
 
 async function getBooks(offset = 0, limit = 5, search = ''): Promise<BookPage> {
   const response = await request<BookPage | Book[]>(
-    `${BOOKS_RESOURCE}?offset=${offset}&limit=${limit}&search=${encodeURIComponent(search)}`,
+    `${API.booksResource}?offset=${offset}&limit=${limit}&search=${encodeURIComponent(search)}`,
     {},
     baseUrl,
   );

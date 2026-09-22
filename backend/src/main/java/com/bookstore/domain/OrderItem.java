@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-public class OrderItem {
+public class OrderItem extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @Column(nullable = false)

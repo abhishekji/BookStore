@@ -119,13 +119,15 @@ class InfrastructureComponentsTest {
             StructuredBusinessEventLogger businessEvents = new StructuredBusinessEventLogger();
             businessEvents.cartItemAdded(userId, bookId, 2, 3);
             businessEvents.cartItemRemoved(userId, bookId, false);
+            businessEvents.cartItemQuantityChanged(userId, bookId, 3, 4);
             businessEvents.checkoutStarted(userId);
             businessEvents.checkoutCompleted(userId, UUID.randomUUID());
             businessEvents.checkoutReplayed(userId, UUID.randomUUID());
             businessEvents.checkoutRejected(userId, "insufficient_stock");
 
-            assertEquals(6, events.list.size());
+            assertEquals(7, events.list.size());
             assertTrue(events.list.stream().anyMatch(event -> event.getFormattedMessage().contains("cart_item_added")));
+            assertTrue(events.list.stream().anyMatch(event -> event.getFormattedMessage().contains("cart_item_quantity_changed")));
             assertTrue(events.list.stream().anyMatch(event -> event.getFormattedMessage().contains("outcome=not_found")));
             assertTrue(events.list.stream().anyMatch(event -> event.getFormattedMessage().contains("correlationId=correlation-1")));
         } finally {

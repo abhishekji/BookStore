@@ -62,6 +62,6 @@ class OrderControllerTest {
 
     private OrderDtos.OrderResponse order() {
         return new OrderDtos.OrderResponse(UUID.randomUUID(), List.of(), BigDecimal.ZERO,
-                com.bookstore.domain.Order.OrderStatus.CONFIRMED, java.time.Instant.now());
+                com.bookstore.domain.Order.OrderStatus.CONFIRMED, java.time.Instant.now(), java.time.Instant.now());
     }
 }

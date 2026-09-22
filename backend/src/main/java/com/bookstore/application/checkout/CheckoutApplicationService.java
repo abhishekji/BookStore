@@ -10,6 +10,7 @@ import com.bookstore.exception.CartNotFoundException;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.repository.CartRepository;
 import com.bookstore.repository.OrderRepository;
+import com.bookstore.repository.UserAccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +29,13 @@ public class CheckoutApplicationService {
     private final OrderRepository orders;
     private final CheckoutIdempotencyService idempotency;
     private final PricingStrategy pricing;
+    private final UserAccountRepository users;
 
     public CheckoutApplicationService(CartRepository carts, BookRepository books, OrderRepository orders,
-                                      CheckoutIdempotencyService idempotency, PricingStrategy pricing) {
+                                      CheckoutIdempotencyService idempotency, PricingStrategy pricing,
+                                      UserAccountRepository users) {
         this.carts = carts; this.books = books; this.orders = orders;
-        this.idempotency = idempotency; this.pricing = pricing;
+        this.idempotency = idempotency; this.pricing = pricing; this.users = users;
     }
 
     @Transactional
@@ -47,13 +50,14 @@ public class CheckoutApplicationService {
         List<UUID> bookIds = cart.getItems().stream().map(CartItem::getBookId).sorted(Comparator.naturalOrder()).toList();
         Map<UUID, Book> booksById = books.findAllByIdForUpdate(bookIds).stream()
                 .collect(Collectors.toMap(Book::getId, Function.identity()));
-        Order order = new Order(userId);
+        Order.Builder orderBuilder = Order.builder().forUser(users.getReferenceById(userId));
         for (CartItem cartItem : cart.getItems()) {
             Book book = booksById.get(cartItem.getBookId());
             if (book == null) throw new BookNotFoundException(cartItem.getBookId());
             book.getInventory().reserve(cartItem.getQuantity());
-            order.addItem(book.getId(), book.getTitle(), cartItem.getQuantity(), pricing.unitPriceFor(book));
+            orderBuilder.addItem(book.getId(), book.getTitle(), cartItem.getQuantity(), pricing.unitPriceFor(book));
         }
+        Order order = orderBuilder.build();
         order.confirm();
         Order persisted = orders.save(order);
         cart.clear();

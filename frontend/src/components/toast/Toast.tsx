@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../state/hooks';
 import { hideToast } from '../../state/store';
+import { UI } from '../../config/constants';
 import './Toast.css';
 
 export function Toast() {
@@ -9,7 +10,7 @@ export function Toast() {
 
   useEffect(() => {
     if (!toast.message) return;
-    const timeout = window.setTimeout(() => dispatch(hideToast()), 4000);
+    const timeout = window.setTimeout(() => dispatch(hideToast()), UI.toastAutoDismissMs);
     return () => window.clearTimeout(timeout);
   }, [dispatch, toast.message]);
 

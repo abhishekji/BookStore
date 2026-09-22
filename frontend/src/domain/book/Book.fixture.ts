@@ -1,4 +1,4 @@
-import type { Book } from '../../domain/types/types';
+import type { Book } from '../types/types';
 
 export const availableBook: Book = {
   id: 'available-book',

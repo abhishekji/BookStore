@@ -9,6 +9,7 @@ import com.bookstore.exception.CartNotFoundException;
 import com.bookstore.infrastructure.BusinessEventLogger;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.repository.CartRepository;
+import com.bookstore.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -22,7 +23,8 @@ class CartApplicationServiceBehaviorTest {
     private final CartRepository carts = mock(CartRepository.class);
     private final BookRepository books = mock(BookRepository.class);
     private final BusinessEventLogger events = mock(BusinessEventLogger.class);
-    private final CartApplicationService service = new CartApplicationService(carts, books, events);
+    private final UserAccountRepository users = mock(UserAccountRepository.class);
+    private final CartApplicationService service = new CartApplicationService(carts, books, events, users);
     private final UUID userId = UUID.randomUUID();
     private final UUID bookId = UUID.randomUUID();
 
@@ -46,6 +48,7 @@ class CartApplicationServiceBehaviorTest {
         cart.addItem(bookId, 2);
         doReturn(cartId).when(cart).getId();
         when(carts.findByUserIdForUpdate(userId)).thenReturn(Optional.empty());
+        when(users.getReferenceById(userId)).thenReturn(com.bookstore.domain.UserAccount.reference(userId));
         when(books.findById(bookId)).thenReturn(Optional.of(book));
         when(book.isInStock()).thenReturn(true);
         when(carts.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -70,6 +73,7 @@ class CartApplicationServiceBehaviorTest {
     void createsEmptyCartWhenReadingForFirstTime() {
         Cart cart = new Cart(userId);
         when(carts.findByUserId(userId)).thenReturn(Optional.empty());
+        when(users.getReferenceById(userId)).thenReturn(com.bookstore.domain.UserAccount.reference(userId));
         when(carts.save(any(Cart.class))).thenReturn(cart);
 
         CartDtos.CartResponse response = service.getCart(userId);
@@ -97,6 +101,7 @@ class CartApplicationServiceBehaviorTest {
 
         service.changeQuantity(userId, bookId, 3);
         assertEquals(3, cart.getItems().get(0).getQuantity());
+        verify(events).cartItemQuantityChanged(userId, bookId, 1, 3);
         service.removeItem(userId, bookId);
 
         assertTrue(cart.getItems().isEmpty());

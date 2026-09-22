@@ -6,18 +6,22 @@ import java.util.*;
 
 @Entity
 @Table(name = "cart", uniqueConstraints = @UniqueConstraint(name = "uk_cart_user", columnNames = "user_id"))
-public class Cart {
+public class Cart extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @Version
     private long version;
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserAccount user;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<CartItem> items = new ArrayList<>();
     protected Cart() { }
-    public Cart(UUID userId) { this.userId = Objects.requireNonNull(userId); }
+    public Cart(UserAccount user) { this.user = Objects.requireNonNull(user, "User is required"); }
+    public Cart(UUID userId) { this(UserAccount.reference(userId)); }
     public UUID getId() { return id; }
-    public UUID getUserId() { return userId; }
+    public UserAccount getUser() { return user; }
+    public UUID getUserId() { return user.getId(); }
     public List<CartItem> getItems() { return List.copyOf(items); }
     public void addItem(UUID bookId, int quantity) {
         if (quantity < QuantityRules.MINIMUM_POSITIVE_QUANTITY) {
@@ -25,9 +29,11 @@ public class Cart {
         }
         items.stream().filter(i -> i.getBookId().equals(bookId)).findFirst()
                 .ifPresentOrElse(i -> i.increase(quantity), () -> items.add(new CartItem(bookId, quantity)));
+        touch();
     }
     public void changeQuantity(UUID bookId, int quantity) {
         findItem(bookId).setQuantity(quantity);
+        touch();
     }
     public UUID resolveBookId(UUID selector) {
         return items.stream()
@@ -41,8 +47,12 @@ public class Cart {
         if (!removed) {
             throw new NoSuchElementException("Cart item not found");
         }
+        touch();
     }
-    public void clear() { items.clear(); }
+    public void clear() {
+        items.clear();
+        touch();
+    }
     public BigDecimal calculateTotal(Map<UUID, BigDecimal> prices) {
         return items.stream()
                 .map(item -> prices.getOrDefault(item.getBookId(), BigDecimal.ZERO)

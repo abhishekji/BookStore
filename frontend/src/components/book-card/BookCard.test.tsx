@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { BookCard } from './BookCard';
-import { availableBook, unavailableBook } from '../../test/fixtures/books';
+import { availableBook, unavailableBook } from '../../domain/book/Book.fixture';
 
 describe('BookCard', () => {
   it('renders book details and formatted price', () => {

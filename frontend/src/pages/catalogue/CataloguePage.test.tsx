@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CataloguePage } from './CataloguePage';
 import { bookApi } from '../../api/client/client';
-import { availableBook, unavailableBook } from '../../test/fixtures/books';
+import { availableBook, unavailableBook } from '../../domain/book/Book.fixture';
 import { Provider } from 'react-redux';
 import { clearCatalogue, hideToast, store } from '../../state/store';
 import { Toast } from '../../components/toast/Toast';

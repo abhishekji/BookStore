@@ -8,10 +8,11 @@ import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
-public class UserAccount {
+public class UserAccount extends AuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -31,6 +32,7 @@ public class UserAccount {
         if (email == null || email.isBlank() || !UserAccountRules.isValidEmail(email.trim())) {
             throw new IllegalArgumentException("A valid email is required");
         }
+
         if (passwordHash == null || passwordHash.isBlank()) {
             throw new IllegalArgumentException("A password hash is required");
         }
@@ -41,6 +43,12 @@ public class UserAccount {
         this.email = email.trim().toLowerCase();
         this.passwordHash = passwordHash;
         this.displayName = displayName == null ? "" : displayName.trim();
+    }
+
+    public static UserAccount reference(UUID id) {
+        UserAccount account = new UserAccount();
+        account.id = Objects.requireNonNull(id, "User ID is required");
+        return account;
     }
     public UUID getId() { return id; }
     public String getEmail() { return email; }

@@ -7,7 +7,7 @@ import { App } from './App';
 import { clearCart, hideToast, store } from './state/store';
 import { cartApi, TOKEN_KEY, type Cart } from './api/client/client';
 import { installFakeIntersectionObserver } from './test/intersection-observer';
-import { availableBook } from './test/fixtures/books';
+import { availableBook } from './domain/book/Book.fixture';
 
 vi.mock('./api/client/client', async () => {
   const actual = await vi.importActual<typeof import('./api/client/client')>('./api/client/client');

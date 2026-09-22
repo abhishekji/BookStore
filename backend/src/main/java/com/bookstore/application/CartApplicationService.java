@@ -10,6 +10,7 @@ import com.bookstore.exception.CartNotFoundException;
 import com.bookstore.infrastructure.BusinessEventLogger;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.repository.CartRepository;
+import com.bookstore.repository.UserAccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +24,14 @@ public class CartApplicationService {
     private final CartRepository repository;
     private final BookRepository books;
     private final BusinessEventLogger eventLogger;
+    private final UserAccountRepository users;
 
-    public CartApplicationService(CartRepository repository, BookRepository books, BusinessEventLogger eventLogger) {
+    public CartApplicationService(CartRepository repository, BookRepository books, BusinessEventLogger eventLogger,
+                                  UserAccountRepository users) {
         this.repository = repository;
         this.books = books;
         this.eventLogger = eventLogger;
+        this.users = users;
     }
 
     @Transactional
@@ -36,7 +40,8 @@ public class CartApplicationService {
         if (!book.isInStock()) {
             throw new IllegalArgumentException("Book is currently unavailable");
         }
-        Cart cart = repository.findByUserIdForUpdate(userId).orElseGet(() -> new Cart(userId));
+        Cart cart = repository.findByUserIdForUpdate(userId)
+                .orElseGet(() -> new Cart(users.getReferenceById(userId)));
         cart.addItem(bookId, quantity);
         repository.save(cart);
         int resultingQuantity = cart.getItems().stream()
@@ -49,7 +54,8 @@ public class CartApplicationService {
 
     @Transactional
     public CartDtos.CartResponse getCart(UUID userId) {
-        Cart cart = repository.findByUserId(userId).orElseGet(() -> repository.save(new Cart(userId)));
+        Cart cart = repository.findByUserId(userId)
+                .orElseGet(() -> repository.save(new Cart(users.getReferenceById(userId))));
         Map<UUID, Book> bookMap = books.findAllById(cart.getItems().stream()
                 .map(CartItem::getBookId).toList()).stream()
                 .collect(Collectors.toMap(Book::getId, Function.identity()));
@@ -71,12 +77,18 @@ public class CartApplicationService {
     public void changeQuantity(UUID userId, UUID bookId, int quantity) {
         Cart cart = findCart(userId);
         UUID actualBookId = resolveBookId(cart, bookId);
+        int previousQuantity = cart.getItems().stream()
+                .filter(item -> item.getBookId().equals(actualBookId))
+                .mapToInt(CartItem::getQuantity)
+                .findFirst()
+                .orElseThrow();
         try {
             cart.changeQuantity(actualBookId, quantity);
         } catch (java.util.NoSuchElementException exception) {
             throw new CartItemNotFoundException(bookId);
         }
         repository.save(cart);
+        eventLogger.cartItemQuantityChanged(userId, actualBookId, previousQuantity, quantity);
     }
 
     @Transactional

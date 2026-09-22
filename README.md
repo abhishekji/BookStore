@@ -353,6 +353,10 @@ mvn clean verify
 
 Backend tests cover domain invariants, availability filtering, DTO mapping, repository queries, application-service delegation, controller behavior, not-found and malformed-ID responses, exception responses, correlation IDs, and CORS configuration.
 
+Core persisted entities record `createdAt` and `updatedAt` timestamps. Carts and orders
+hold a typed `UserAccount` association while retaining `user_id` foreign keys and
+indexes in the database; order status transitions update `updatedAt`.
+
 ## Authentication, authorization, and validation errors
 
 Catalogue and health endpoints are public. Other backend endpoints require stateless HTTP Basic authentication backed by the `user_account` table. Unknown users and invalid credentials return a structured `401` response without revealing whether an account exists:

@@ -13,14 +13,20 @@ public class StructuredBusinessEventLogger implements BusinessEventLogger {
 
     @Override
     public void cartItemAdded(UUID userId, UUID bookId, int quantity, int resultingQuantity) {
-        log.info("event=cart_item_added userId={} bookId={} quantity={} resultingQuantity={} outcome=success",
-                userId, bookId, quantity, resultingQuantity);
+        log.info("event=cart_item_added correlationId={} userId={} bookId={} quantity={} resultingQuantity={} outcome=success",
+                correlationId(), userId, bookId, quantity, resultingQuantity);
     }
 
     @Override
     public void cartItemRemoved(UUID userId, UUID bookId, boolean removed) {
-        log.info("event=cart_item_removed userId={} bookId={} removed={} outcome={}",
-                userId, bookId, removed, removed ? "success" : "not_found");
+        log.info("event=cart_item_removed correlationId={} userId={} bookId={} removed={} outcome={}",
+                correlationId(), userId, bookId, removed, removed ? "success" : "not_found");
+    }
+
+    @Override
+    public void cartItemQuantityChanged(UUID userId, UUID bookId, int previousQuantity, int newQuantity) {
+        log.info("event=cart_item_quantity_changed correlationId={} userId={} bookId={} previousQuantity={} newQuantity={} outcome=success",
+                correlationId(), userId, bookId, previousQuantity, newQuantity);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.bookstore.domain.Book;
 import com.bookstore.infrastructure.BusinessEventLogger;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.repository.CartRepository;
+import com.bookstore.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -16,7 +17,8 @@ class CartApplicationServiceTest {
     private final CartRepository repository = mock(CartRepository.class);
     private final BookRepository books = mock(BookRepository.class);
     private final BusinessEventLogger eventLogger = mock(BusinessEventLogger.class);
-    private final CartApplicationService service = new CartApplicationService(repository, books, eventLogger);
+    private final UserAccountRepository users = mock(UserAccountRepository.class);
+    private final CartApplicationService service = new CartApplicationService(repository, books, eventLogger, users);
     private final UUID userId = UUID.randomUUID();
     private final UUID bookId = UUID.randomUUID();
 

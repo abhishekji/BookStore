@@ -50,7 +50,7 @@ class OrderTest {
 
     @Test
     void rejectsNullUser() {
-        assertThrows(NullPointerException.class, () -> new Order(null));
+        assertThrows(NullPointerException.class, () -> new Order((UUID) null));
     }
 
     @Test

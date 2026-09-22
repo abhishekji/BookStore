@@ -3,8 +3,8 @@ import { Provider } from 'react-redux';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Toast } from './Toast';
 import { hideToast, showToast, store } from '../../state/store';
+import { UI } from '../../config/constants';
 
-const AUTO_DISMISS_MS = 4000;
 const renderToast = () => render(<Provider store={store}><Toast /></Provider>);
 
 describe('Toast', () => {
@@ -44,7 +44,7 @@ describe('Toast', () => {
     renderToast();
     act(() => { store.dispatch(showToast({ type: 'success', message: 'Saved.' })); });
     expect(screen.getByRole('status')).toBeInTheDocument();
-    act(() => { vi.advanceTimersByTime(AUTO_DISMISS_MS); });
+    act(() => { vi.advanceTimersByTime(UI.toastAutoDismissMs); });
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

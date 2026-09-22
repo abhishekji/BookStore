@@ -16,7 +16,8 @@ class CheckoutApplicationServiceTest {
     private final OrderRepository orders = mock(OrderRepository.class);
     private final CheckoutIdempotencyService idempotency = mock(CheckoutIdempotencyService.class);
     private final PricingStrategy pricing = mock(PricingStrategy.class);
-    private final CheckoutApplicationService service = new CheckoutApplicationService(carts, books, orders, idempotency, pricing);
+    private final UserAccountRepository users = mock(UserAccountRepository.class);
+    private final CheckoutApplicationService service = new CheckoutApplicationService(carts, books, orders, idempotency, pricing, users);
     private final UUID userId = UUID.randomUUID();
 
     @Test
@@ -33,6 +34,7 @@ class CheckoutApplicationServiceTest {
         when(books.findAllByIdForUpdate(List.of(bookId))).thenReturn(List.of(book));
         when(pricing.unitPriceFor(book)).thenReturn(new BigDecimal("29.99"));
         when(idempotency.begin(userId, "key", "checkout-v1")).thenReturn(CheckoutIdempotencyResult.newCheckout());
+        when(users.getReferenceById(userId)).thenReturn(UserAccount.reference(userId));
         when(orders.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.checkout(userId, "key");

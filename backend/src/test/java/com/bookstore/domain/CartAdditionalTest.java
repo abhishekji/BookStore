@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CartAdditionalTest {
     @Test
     void rejectsNullUser() {
-        assertThrows(NullPointerException.class, () -> new Cart(null));
+        assertThrows(NullPointerException.class, () -> new Cart((UUID) null));
     }
 
     @Test
