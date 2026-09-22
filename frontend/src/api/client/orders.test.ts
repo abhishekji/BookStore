@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { orderApi, TOKEN_KEY, type Order } from './client';
+import { orderApi, TOKEN_KEY, type Order, type OrderPage } from './client';
 
 const order: Order = {
   id: 'order-1', status: 'CONFIRMED', createdAt: '2026-09-21T10:15:00Z', total: 39.99,
   items: [{ bookId: 'book-1', bookTitle: 'Clean Code', quantity: 1, unitPrice: 39.99, lineTotal: 39.99 }],
 };
+const page: OrderPage = { content: [order], offset: 0, limit: 10, hasNext: false, total: 1 };
 
 const okResponse = (body: unknown) => ({ ok: true, status: 200, json: vi.fn().mockResolvedValue(body) });
 
@@ -27,10 +28,10 @@ describe('orderApi', () => {
   });
 
   it('lists the authenticated reader\'s orders', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse([order])));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(page)));
 
-    await expect(orderApi.getOrders()).resolves.toEqual([order]);
-    expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/orders', expect.anything());
+    await expect(orderApi.getOrders()).resolves.toEqual(page);
+    expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/orders?offset=0&limit=10', expect.anything());
   });
 
   it('retrieves a single order by identifier', async () => {

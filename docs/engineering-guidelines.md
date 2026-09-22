@@ -12,11 +12,10 @@ The backend uses a rich domain model rather than treating entities as database-s
 
 Application services coordinate use cases and transactions. Controllers translate HTTP requests and responses. DTOs define API contracts and do not contain business decisions.
 
-Use interfaces at replaceable boundaries such as payment, identity, clock, inventory, and event publishing. The current checkout seam demonstrates the following patterns:
+Use interfaces at real replaceable boundaries such as identity, clock, inventory, and
+event publishing. The current checkout seam demonstrates the following pattern:
 
 - **Builder**: `Order.Builder` creates an order while keeping optional creation-time and item composition details out of constructors.
-- **Strategy**: `PaymentStrategy` isolates payment authorization and refund behavior for each payment method.
-- **Factory**: `PaymentStrategyFactory` selects the configured payment strategy without coupling checkout to concrete providers.
 
 Keep each pattern focused on a real variation point. Do not add factories, strategies, or builders merely to increase abstraction; a single stable algorithm should remain simple.
 

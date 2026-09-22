@@ -11,6 +11,7 @@ export type Cart = { id: string; items: CartItem[]; total: number };
 export type OrderItem = { bookId: string; bookTitle: string; quantity: number; unitPrice: number; lineTotal: number };
 export type Order = { id: string; items: OrderItem[]; total: number; status: string; createdAt: string; updatedAt?: string };
 export type BookPage = { content: Book[]; offset: number; limit: number; hasNext: boolean; total: number };
+export type OrderPage = { content: Order[]; offset: number; limit: number; hasNext: boolean; total: number };
 
 function requestHeaders(): HeadersInit {
   const token = localStorage.getItem(TOKEN_KEY);
@@ -107,10 +108,12 @@ async function removeFromCart(bookId: string): Promise<void> {
   return request<void>(`/cart/items/${bookId}`, { method: 'DELETE' });
 }
 async function checkout(idempotencyKey: string): Promise<Order> {
-  return request<Order>('/orders/checkout', { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey } });
+  return request<Order>(`${API.ordersResource}/checkout`, { method: 'POST', headers: { 'Idempotency-Key': idempotencyKey } });
 }
-async function getOrders(): Promise<Order[]> { return request<Order[]>('/orders'); }
-async function getOrder(orderId: string): Promise<Order> { return request<Order>(`/orders/${orderId}`); }
+async function getOrders(offset = 0, limit = 10): Promise<OrderPage> {
+  return request<OrderPage>(`${API.ordersResource}?offset=${offset}&limit=${limit}`);
+}
+async function getOrder(orderId: string): Promise<Order> { return request<Order>(`${API.ordersResource}/${orderId}`); }
 
 export const authApi = { register, login };
 export const cartApi = { getCart, addToCart, changeCartQuantity, removeFromCart };

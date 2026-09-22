@@ -4,13 +4,18 @@ import com.bookstore.domain.Book;
 import com.bookstore.domain.Cart;
 import com.bookstore.domain.CartItem;
 import com.bookstore.domain.Order;
+import com.bookstore.application.CartPricingAssembler;
 import com.bookstore.dto.OrderDtos;
+import com.bookstore.dto.OrderPageResponse;
 import com.bookstore.exception.BookNotFoundException;
 import com.bookstore.exception.CartNotFoundException;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.repository.CartRepository;
 import com.bookstore.repository.OrderRepository;
 import com.bookstore.repository.UserAccountRepository;
+import com.bookstore.infrastructure.OffsetBasedPageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,12 +35,14 @@ public class CheckoutApplicationService {
     private final CheckoutIdempotencyService idempotency;
     private final PricingStrategy pricing;
     private final UserAccountRepository users;
+    private final CartPricingAssembler cartPricingAssembler;
 
     public CheckoutApplicationService(CartRepository carts, BookRepository books, OrderRepository orders,
                                       CheckoutIdempotencyService idempotency, PricingStrategy pricing,
-                                      UserAccountRepository users) {
+                                      UserAccountRepository users, CartPricingAssembler cartPricingAssembler) {
         this.carts = carts; this.books = books; this.orders = orders;
         this.idempotency = idempotency; this.pricing = pricing; this.users = users;
+        this.cartPricingAssembler = cartPricingAssembler;
     }
 
     @Transactional
@@ -51,11 +58,12 @@ public class CheckoutApplicationService {
         Map<UUID, Book> booksById = books.findAllByIdForUpdate(bookIds).stream()
                 .collect(Collectors.toMap(Book::getId, Function.identity()));
         Order.Builder orderBuilder = Order.builder().forUser(users.getReferenceById(userId));
-        for (CartItem cartItem : cart.getItems()) {
-            Book book = booksById.get(cartItem.getBookId());
-            if (book == null) throw new BookNotFoundException(cartItem.getBookId());
-            book.getInventory().reserve(cartItem.getQuantity());
-            orderBuilder.addItem(book.getId(), book.getTitle(), cartItem.getQuantity(), pricing.unitPriceFor(book));
+        CartPricingAssembler.PricedCart pricedCart =
+                cartPricingAssembler.assemble(cart, booksById, pricing::unitPriceFor);
+        for (CartPricingAssembler.PricedCartLine line : pricedCart.lines()) {
+            line.book().getInventory().reserve(line.cartItem().getQuantity());
+            orderBuilder.addItem(line.book().getId(), line.book().getTitle(),
+                    line.cartItem().getQuantity(), line.unitPrice());
         }
         Order order = orderBuilder.build();
         order.confirm();
@@ -66,8 +74,14 @@ public class CheckoutApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderDtos.OrderResponse> findOrders(UUID userId) {
-        return orders.findByUserIdOrderByCreatedAtDesc(userId).stream().map(OrderDtos.OrderResponse::from).toList();
+    public OrderPageResponse findOrders(UUID userId, int offset, int limit) {
+        int safeOffset = Math.max(offset, 0);
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        Pageable pageable = new OffsetBasedPageRequest(safeOffset, safeLimit,
+                org.springframework.data.domain.Sort.by("createdAt").descending());
+        Page<Order> page = orders.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        return new OrderPageResponse(page.getContent().stream().map(OrderDtos.OrderResponse::from).toList(),
+                safeOffset, safeLimit, page.hasNext(), page.getTotalElements());
     }
 
     @Transactional(readOnly = true)

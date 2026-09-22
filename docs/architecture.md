@@ -39,11 +39,11 @@ The codebase uses patterns where they solve an existing boundary:
 - **Ports and adapters**: replaceable integrations such as identity, payment, inventory, and event publishing should be represented by application interfaces with infrastructure adapters.
 - **Transactional checkout**: `CheckoutApplicationService` performs idempotency claiming, cart and inventory locking, stock reservation, order persistence, cart clearing, and idempotency completion in one database transaction.
 - **Builder**: `Order.Builder` keeps order construction readable as checkout adds timestamps, line items, totals, and metadata.
-- **Strategy**: `PaymentStrategy` isolates payment authorization and refund behavior for different payment methods or providers.
-- **Factory**: `PaymentStrategyFactory` chooses a payment strategy from the configured implementations and keeps application services independent of provider classes.
 - **Idempotency record**: `CheckoutIdempotencyRecord` and its unique user/key constraint make checkout retries safe across threads and application instances.
 
-These patterns are deliberately implemented at existing variation points. A future payment provider adapter can implement `PaymentStrategy`; checkout does not need to change when another provider is added.
+These patterns are deliberately implemented at existing variation points. Payment is not
+yet part of checkout; a payment port will be introduced only when a concrete provider
+and payment workflow are defined.
 
 The current deployment is a modular monolith. Checkout uses one database transaction as
 its consistency boundary; atomic locking protects stock and idempotency. If future

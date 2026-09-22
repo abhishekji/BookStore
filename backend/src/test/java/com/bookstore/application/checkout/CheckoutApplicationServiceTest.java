@@ -1,6 +1,7 @@
 package com.bookstore.application.checkout;
 
 import com.bookstore.domain.*;
+import com.bookstore.application.CartPricingAssembler;
 import com.bookstore.exception.BookNotFoundException;
 import com.bookstore.repository.*;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,9 @@ class CheckoutApplicationServiceTest {
     private final CheckoutIdempotencyService idempotency = mock(CheckoutIdempotencyService.class);
     private final PricingStrategy pricing = mock(PricingStrategy.class);
     private final UserAccountRepository users = mock(UserAccountRepository.class);
-    private final CheckoutApplicationService service = new CheckoutApplicationService(carts, books, orders, idempotency, pricing, users);
+    private final CheckoutApplicationService service =
+            new CheckoutApplicationService(carts, books, orders, idempotency, pricing, users,
+                    new CartPricingAssembler(books));
     private final UUID userId = UUID.randomUUID();
 
     @Test

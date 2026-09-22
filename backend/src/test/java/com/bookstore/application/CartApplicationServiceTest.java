@@ -18,7 +18,8 @@ class CartApplicationServiceTest {
     private final BookRepository books = mock(BookRepository.class);
     private final BusinessEventLogger eventLogger = mock(BusinessEventLogger.class);
     private final UserAccountRepository users = mock(UserAccountRepository.class);
-    private final CartApplicationService service = new CartApplicationService(repository, books, eventLogger, users);
+    private final CartApplicationService service =
+            new CartApplicationService(repository, books, eventLogger, users, new CartPricingAssembler(books));
     private final UUID userId = UUID.randomUUID();
     private final UUID bookId = UUID.randomUUID();
 

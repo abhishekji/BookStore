@@ -13,7 +13,7 @@ The target user journey is:
 
 ## Checkout and orders
 
-Authenticated users checkout with `POST /api/orders/checkout` and an `Idempotency-Key` header. The response contains the confirmed order, including price/title snapshots. `GET /api/orders` lists only the current user's orders and `GET /api/orders/{id}` returns an order only to its owner.
+Authenticated users checkout with `POST /api/orders/checkout` and an `Idempotency-Key` header. The response contains the confirmed order, including price/title snapshots. `GET /api/orders?offset=0&limit=10` lists only the current user's orders in descending creation order and returns `content`, `offset`, `limit`, `hasNext`, and `total`. `GET /api/orders/{id}` returns an order only to its owner.
 
 Checkout is atomic: the idempotency claim, cart lock, stock reservation, order/item persistence, cart clear, and claim completion are one transaction. Failures roll back all writes. `checkout_idempotency` has a database uniqueness constraint on `(user_id, idempotency_key)`, which works across backend instances. The same completed key replays the original order; an in-flight concurrent request gets `409`. The cart and requested books are pessimistically locked, with books locked in UUID order to avoid overselling and reduce deadlock risk.
 
@@ -136,10 +136,10 @@ with an outbox for reliable event publication.
 The checkout architecture also uses focused SOLID patterns:
 
 - `Order.Builder` keeps order construction extensible without telescoping constructors.
-- `PaymentStrategy` defines the payment provider contract.
-- `PaymentStrategyFactory` selects a payment strategy by `PaymentMethod`.
 
-These are application seams for future checkout work, not mock payment implementations. Concrete payment adapters will be added when the payment workflow and provider requirements are defined.
+Payment is intentionally outside the current checkout workflow. A payment port and
+provider adapter will be added only after the payment workflow and provider
+requirements are defined.
 
 Environment-sensitive infrastructure values such as CORS origins, allowed methods, headers, and credential policy are configured under `bookstore.cors` in `application.yml` and can be overridden per Spring profile or deployment environment. Domain thresholds and protocol identifiers are represented by named constants or enums rather than scattered literals.
 

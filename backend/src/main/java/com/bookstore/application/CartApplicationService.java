@@ -15,9 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class CartApplicationService {
@@ -25,13 +22,15 @@ public class CartApplicationService {
     private final BookRepository books;
     private final BusinessEventLogger eventLogger;
     private final UserAccountRepository users;
+    private final CartPricingAssembler cartPricingAssembler;
 
     public CartApplicationService(CartRepository repository, BookRepository books, BusinessEventLogger eventLogger,
-                                  UserAccountRepository users) {
+                                  UserAccountRepository users, CartPricingAssembler cartPricingAssembler) {
         this.repository = repository;
         this.books = books;
         this.eventLogger = eventLogger;
         this.users = users;
+        this.cartPricingAssembler = cartPricingAssembler;
     }
 
     @Transactional
@@ -56,21 +55,7 @@ public class CartApplicationService {
     public CartDtos.CartResponse getCart(UUID userId) {
         Cart cart = repository.findByUserId(userId)
                 .orElseGet(() -> repository.save(new Cart(users.getReferenceById(userId))));
-        Map<UUID, Book> bookMap = books.findAllById(cart.getItems().stream()
-                .map(CartItem::getBookId).toList()).stream()
-                .collect(Collectors.toMap(Book::getId, Function.identity()));
-        var items = cart.getItems().stream().map(item -> {
-            Book book = bookMap.get(item.getBookId());
-            if (book == null) {
-                throw new BookNotFoundException(item.getBookId());
-            }
-            var lineTotal = book.getPrice().multiply(java.math.BigDecimal.valueOf(item.getQuantity()));
-            return new CartDtos.CartItemResponse(item.getId(), book.getId(), book.getTitle(), item.getQuantity(),
-                    book.getPrice(), lineTotal);
-        }).toList();
-        return new CartDtos.CartResponse(cart.getId(), items,
-                items.stream().map(CartDtos.CartItemResponse::lineTotal)
-                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add));
+        return cartPricingAssembler.assemble(cart).toResponse();
     }
 
     @Transactional

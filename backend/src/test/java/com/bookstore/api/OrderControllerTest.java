@@ -4,6 +4,7 @@ import com.bookstore.application.checkout.CheckoutApplicationService;
 import com.bookstore.application.checkout.CheckoutResult;
 import com.bookstore.domain.UserAccount;
 import com.bookstore.dto.OrderDtos;
+import com.bookstore.dto.OrderPageResponse;
 import com.bookstore.repository.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -40,10 +41,11 @@ class OrderControllerTest {
     void returnsOrderHistoryAndSingleOrderForCurrentUserOnly() {
         OrderDtos.OrderResponse order = order();
         authenticate();
-        when(service.findOrders(userId)).thenReturn(List.of(order));
+        OrderPageResponse page = new OrderPageResponse(List.of(order), 0, 10, false, 1);
+        when(service.findOrders(userId, 0, 10)).thenReturn(page);
         when(service.findOrder(userId, order.id())).thenReturn(order);
 
-        assertEquals(List.of(order), controller.orders(authentication));
+        assertEquals(page, controller.orders(authentication, 0, 10));
         assertSame(order, controller.order(authentication, order.id()));
     }
 
@@ -51,7 +53,7 @@ class OrderControllerTest {
     void rejectsDeletedAuthenticatedAccount() {
         when(users.findByEmail("reader@example.com")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> controller.orders(authentication));
+        assertThrows(IllegalStateException.class, () -> controller.orders(authentication, 0, 10));
     }
 
     private void authenticate() {

@@ -159,7 +159,7 @@ changed stock state with relatively stable book details and gives inventory a cl
 for future reservations, warehouses, stock versions, and stock-ledger fields.
 
 The current schema does not yet include payment, shipment, address, product category,
-refresh-token, audit, or outbox tables. Payment interfaces exist, but no real payment
+refresh-token, audit, or outbox tables. No payment integration exists until a concrete payment
 provider workflow has been implemented.
 
 ## Joins and typical queries
