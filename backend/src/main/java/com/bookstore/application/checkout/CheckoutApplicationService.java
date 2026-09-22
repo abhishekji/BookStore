@@ -6,16 +6,12 @@ import com.bookstore.domain.CartItem;
 import com.bookstore.domain.Order;
 import com.bookstore.application.CartPricingAssembler;
 import com.bookstore.dto.OrderDtos;
-import com.bookstore.dto.OrderPageResponse;
 import com.bookstore.exception.BookNotFoundException;
 import com.bookstore.exception.CartNotFoundException;
 import com.bookstore.repository.BookRepository;
 import com.bookstore.repository.CartRepository;
 import com.bookstore.repository.OrderRepository;
 import com.bookstore.repository.UserAccountRepository;
-import com.bookstore.infrastructure.OffsetBasedPageRequest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,21 +69,4 @@ public class CheckoutApplicationService {
         return new CheckoutResult(OrderDtos.OrderResponse.from(persisted), false);
     }
 
-    @Transactional(readOnly = true)
-    public OrderPageResponse findOrders(UUID userId, int offset, int limit) {
-        int safeOffset = Math.max(offset, 0);
-        int safeLimit = Math.min(Math.max(limit, 1), 50);
-        Pageable pageable = new OffsetBasedPageRequest(safeOffset, safeLimit,
-                org.springframework.data.domain.Sort.by("createdAt").descending());
-        Page<Order> page = orders.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        return new OrderPageResponse(page.getContent().stream().map(OrderDtos.OrderResponse::from).toList(),
-                safeOffset, safeLimit, page.hasNext(), page.getTotalElements());
-    }
-
-    @Transactional(readOnly = true)
-    public OrderDtos.OrderResponse findOrder(UUID userId, UUID orderId) {
-        Order order = orders.findById(orderId).orElseThrow(() -> new java.util.NoSuchElementException("Order not found"));
-        if (!order.getUserId().equals(userId)) throw new org.springframework.security.access.AccessDeniedException("Order does not belong to the authenticated user");
-        return OrderDtos.OrderResponse.from(order);
-    }
 }

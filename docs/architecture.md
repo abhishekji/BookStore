@@ -37,7 +37,7 @@ The codebase uses patterns where they solve an existing boundary:
 - **Domain model / aggregate**: `Book`, `Cart`, and `Order` protect their own invariants.
 - **DTO / data mapper**: API response records prevent persistence entities from becoming API contracts.
 - **Ports and adapters**: replaceable integrations such as identity, payment, inventory, and event publishing should be represented by application interfaces with infrastructure adapters.
-- **Transactional checkout**: `CheckoutApplicationService` performs idempotency claiming, cart and inventory locking, stock reservation, order persistence, cart clearing, and idempotency completion in one database transaction.
+- **Transactional checkout**: `CheckoutApplicationService` performs idempotency claiming, cart and inventory locking, stock reservation, order persistence, cart clearing, and idempotency completion in one database transaction. `OrderQueryService` separately handles paginated order history and ownership-checked order retrieval, keeping query concerns outside the checkout command workflow.
 - **Builder**: `Order.Builder` keeps order construction readable as checkout adds timestamps, line items, totals, and metadata.
 - **Idempotency record**: `CheckoutIdempotencyRecord` and its unique user/key constraint make checkout retries safe across threads and application instances.
 

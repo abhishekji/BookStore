@@ -2,6 +2,7 @@ package com.bookstore.api;
 
 import com.bookstore.application.checkout.CheckoutApplicationService;
 import com.bookstore.application.checkout.CheckoutResult;
+import com.bookstore.application.orders.OrderQueryService;
 import com.bookstore.domain.UserAccount;
 import com.bookstore.dto.OrderDtos;
 import com.bookstore.dto.OrderPageResponse;
@@ -19,9 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class OrderControllerTest {
-    private final CheckoutApplicationService service = mock(CheckoutApplicationService.class);
+    private final CheckoutApplicationService checkoutService = mock(CheckoutApplicationService.class);
+    private final OrderQueryService orderQueryService = mock(OrderQueryService.class);
     private final UserAccountRepository users = mock(UserAccountRepository.class);
-    private final OrderController controller = new OrderController(service, users);
+    private final OrderController controller = new OrderController(checkoutService, orderQueryService, users);
     private final UUID userId = UUID.randomUUID();
     private final TestingAuthenticationToken authentication = new TestingAuthenticationToken("reader@example.com", "password");
 
@@ -29,8 +31,8 @@ class OrderControllerTest {
     void returnsCreatedForNewCheckoutAndOkForIdempotentReplay() {
         OrderDtos.OrderResponse order = order();
         authenticate();
-        when(service.checkout(userId, "new-key")).thenReturn(new CheckoutResult(order, false));
-        when(service.checkout(userId, "retry-key")).thenReturn(new CheckoutResult(order, true));
+        when(checkoutService.checkout(userId, "new-key")).thenReturn(new CheckoutResult(order, false));
+        when(checkoutService.checkout(userId, "retry-key")).thenReturn(new CheckoutResult(order, true));
 
         assertEquals(HttpStatus.CREATED, controller.checkout(authentication, "new-key").getStatusCode());
         assertEquals(HttpStatus.OK, controller.checkout(authentication, "retry-key").getStatusCode());
@@ -42,8 +44,8 @@ class OrderControllerTest {
         OrderDtos.OrderResponse order = order();
         authenticate();
         OrderPageResponse page = new OrderPageResponse(List.of(order), 0, 10, false, 1);
-        when(service.findOrders(userId, 0, 10)).thenReturn(page);
-        when(service.findOrder(userId, order.id())).thenReturn(order);
+        when(orderQueryService.findOrders(userId, 0, 10)).thenReturn(page);
+        when(orderQueryService.findOrder(userId, order.id())).thenReturn(order);
 
         assertEquals(page, controller.orders(authentication, 0, 10));
         assertSame(order, controller.order(authentication, order.id()));

@@ -1,6 +1,7 @@
 package com.bookstore.api;
 
 import com.bookstore.application.checkout.CheckoutApplicationService;
+import com.bookstore.application.orders.OrderQueryService;
 import com.bookstore.domain.UserAccount;
 import com.bookstore.dto.OrderDtos;
 import com.bookstore.dto.OrderPageResponse;
@@ -25,18 +26,22 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Orders", description = "Authenticated checkout and order history APIs")
 public class OrderController {
-    private final CheckoutApplicationService service;
+    private final CheckoutApplicationService checkoutService;
+    private final OrderQueryService orderQueryService;
     private final UserAccountRepository users;
 
-    public OrderController(CheckoutApplicationService service, UserAccountRepository users) {
-        this.service = service; this.users = users;
+    public OrderController(CheckoutApplicationService checkoutService, OrderQueryService orderQueryService,
+                           UserAccountRepository users) {
+        this.checkoutService = checkoutService;
+        this.orderQueryService = orderQueryService;
+        this.users = users;
     }
 
     @PostMapping("/checkout")
     @Operation(summary = "Checkout the current cart", description = "Requires an Idempotency-Key header.")
     public ResponseEntity<OrderDtos.OrderResponse> checkout(Authentication authentication,
             @RequestHeader("Idempotency-Key") String idempotencyKey) {
-        var result = service.checkout(userId(authentication), idempotencyKey);
+        var result = checkoutService.checkout(userId(authentication), idempotencyKey);
         return ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED).body(result.order());
     }
 
@@ -46,12 +51,12 @@ public class OrderController {
     public OrderPageResponse orders(Authentication authentication,
                                     @RequestParam(defaultValue = "0") int offset,
                                     @RequestParam(defaultValue = "10") int limit) {
-        return service.findOrders(userId(authentication), offset, limit);
+        return orderQueryService.findOrders(userId(authentication), offset, limit);
     }
 
     @GetMapping("/{orderId}")
     public OrderDtos.OrderResponse order(Authentication authentication, @PathVariable UUID orderId) {
-        return service.findOrder(userId(authentication), orderId);
+        return orderQueryService.findOrder(userId(authentication), orderId);
     }
 
     private UUID userId(Authentication authentication) {
